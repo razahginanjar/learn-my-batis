@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.learn_mybatis.repositories.StudentMapperXml">
+    <resultMap id="studentMap" type = "com.example.learn_mybatis.entities.Student">
+        <id column="s_id" property="sId"></id>
+        <id column="s_name" property="sName"></id>
+        <id column="s_sex" property="sSex"></id>
+        <id column="s_brith" property="sBirth"></id>
+    </resultMap>
+
+    <resultMap id="StudentAndCourseInfoMap" type = "com.example.learn_mybatis.entities.StudentAndCourseInfo">
+        <id column="s_id" property="sId"></id>
+        <id column="s_name" property="sName"></id>
+        <id column="s_sex" property="sSex"></id>
+        <id column="s_brith" property="sBirth"></id>
+        <id column="course1_score" property="scoreC1"></id>
+        <id column="course2_score" property="scoreC2"></id>
+    </resultMap>
+
+    <resultMap id="StudentAvgScore" type = "com.example.learn_mybatis.entities.StudentAvgScore">
+        <id column="s_id" property="studentId"></id>
+        <id column="s_name" property="studentName"></id>
+        <id column="average_score" property="avgScore"></id>
+    </resultMap>
+    <select id="findStudentById" parameterType="long" resultMap="studentMap">
+        SELECT * FROM student WHERE s_id = #{id}
+    </select>
+
+    <select id="findAll" resultMap="studentMap">
+        select * from student
+    </select>
+
+    <select id="findAllSpecificNameAndGender" resultMap="studentMap">
+        select * from student
+        <trim prefix="WHERE" prefixOverrides="AND">
+            <if test="name != null and name != ''">
+                s_name = #{name}
+            </if>
+            <if test="sex != null and sex != ''">
+                AND s_sex = #{sex}
+            </if>
+        </trim>
+    </select>
+
+    <insert id = "create" parameterType="com.example.learn_mybatis.entities.Student">
+        insert into student(s_id, s_name, s_sex, s_brith)
+            value(#{sId}, #{sName}, #{sSex}, #{sBirth})
+    </insert>
+
+    <update id="update" parameterType = "com.example.learn_mybatis.entities.Student" >
+        update student
+        set s_name = #{sName}, s_sex = #{sSex}, s_brith = #{sBirth}
+        where s_id = #{sId}
+    </update>
+
+    <delete id="delete" parameterType="java.lang.String" >
+         delete from student
+         where s_id = #{sId}
+    </delete>
+
+<!--    information and course scores of students whose grades in the first course are higher than those in the second course-->
+    <select id="findWhoScoreIsScoreInCourseOneThanCourseTwo" resultMap="StudentAndCourseInfoMap" parameterType="Long">
+        SELECT
+            s.s_id,
+            s.s_name,
+            s.s_brith,
+            s.s_sex,
+            sc1.s_score AS course1_score,
+            sc2.s_score AS course2_score
+        FROM student s
+                 JOIN score sc1 ON s.s_id = sc1.s_id AND sc1.c_id = #{firstCId}
+                 JOIN score sc2 ON s.s_id = sc2.s_id AND sc2.c_id = #{secondCId}
+        WHERE sc1.s_score > sc2.s_score;
+    </select>
+
+<!--    students whose average score is greater than or equal to 60 points-->
+    <select id="findStudentAvgThanX" parameterType="Long" resultMap="StudentAvgScore">
+        SELECT s.s_id, s.s_name, COALESCE(AVG(sc.s_score), 0) AS average_score
+        FROM student s
+            LEFT JOIN score sc ON s.s_id = sc.s_id
+        GROUP BY s.s_id, s.s_name
+        HAVING average_score &lt; #{score};
+    </select>
+
+
+</mapper>
